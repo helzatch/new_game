@@ -6,8 +6,8 @@ function love.load()
 	-- Loads the sprite and gives the position
 	character = {}
 	character.player = love.graphics.newImage("patchy.png")
-	character.x = 50
-	character.y = 50
+	character.x = 70
+	character.y = 70
 
 	-- Direction to which we can move
 	direction = {}
@@ -74,7 +74,12 @@ end
 
 
 function love.draw()
+	debug.keyPressed("Key pressed: ", direction.current, 0, 0)
+	debug.keyPressed("leftAndRightPressed: ", tostring(leftAndRightPressed), 0, 24)
+
 	if direction.current == direction.left then
+		debug.keyPressed("draw() first if: ", direction.current, 0, 12)
+
 		-- Signature of draw function
 		--love.graphics.draw( texture, quad, x, y, r, sx, sy, ox, oy, kx, ky)
 		-- Magic number 45 is the size of the Quad (sprite frame) and it's rested to avoid a bug when switching from right to left movement, or viceversa.
@@ -94,6 +99,8 @@ function love.draw()
 				A value more than 1 squezees the image horziontally, and makes it larger vertically (it increases vertically if the value increments, accordingly)
 		]]
 	else
+		debug.keyPressed("draw() second if: ", direction.current, 0, 12)
+		
 		love.graphics.draw(character.player, quads[walk][iteration], character.x, character.y, 0,
 			-1, 1)
 	end
@@ -112,8 +119,25 @@ function love.keyreleased(key)
 	if (key == direction.left or key == direction.right) and leftAndRightPressed == true then
 		idle = false -- Make move if one key is released after both were pressed
 		leftAndRightPressed = false
+		-- This fixes the moonwalk
+		if key == direction.left then
+			direction.current = direction.right
+		elseif key == direction.right then
+			direction.current = direction.left
+		end
 	elseif key == direction.left or key == direction.right then
 		idle = true
 		iteration = 0
 	end
+end
+
+function keyPressed(key)
+	love.graphics.print("Key pressed: " .. key, 0, 0)
+end
+
+-- Used to debug and print which key is currently pressed, make sure to provide substantially different axis in the
+-- function call to avoid overlap.
+function debug.keyPressed(message, key, xAxysPos, yAxisPos)
+	--love.graphics.print("draw() second if: " .. direction.current, 0, 12)
+	love.graphics.print(message .. key, xAxysPos, yAxisPos)
 end
