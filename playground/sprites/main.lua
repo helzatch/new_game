@@ -19,6 +19,7 @@ function love.load()
 	walkSpeed = 5
 	iteration = 1 -- Current frame of the sprite
 	leftAndRightPressed = false -- Left and right keys pressed at the same time
+	lastKeyPressed = direction.right
 	max = 9 -- Quantity of sprite's frames
 	idle = true -- The character is moving?
 	timer = 0.1
@@ -49,19 +50,23 @@ function love.update(dt)
 		if timer > 0.2 then
 			timer = 0.1
 			iteration = iteration + 1
-			-- Both left and right keys pressed?
-			if love.keyboard.isDown(direction.right) and love.keyboard.isDown(direction.left) then
+
+			-- saves a bit of overhead (from calling isDown())
+			isRightPressed = love.keyboard.isDown(direction.right)
+			isLeftPressed = love.keyboard.isDown(direction.left)
+
+			-- stops the character if both keys are pressed, (it doesn't uses leftAndRightPressed var because it's here when we set it)
+			if isRightPressed and isLeftPressed then
 				iteration = 0
 				idle = true
 				leftAndRightPressed = true
 				return
 			end
-			-- Right key pressed
-			if love.keyboard.isDown(direction.right) then
+
+			-- Actually moves the character in the X Axis
+			if isRightPressed then
 				character.x = character.x + walkSpeed
-			end
-			-- Left key pressed
-			if love.keyboard.isDown(direction.left) then
+			elseif isLeftPressed then
 				character.x = character.x - walkSpeed
 			end
 			-- Reached last frame of sprite, start again
@@ -74,11 +79,27 @@ end
 
 
 function love.draw()
-	debug.keyPressed("Key pressed: ", direction.current, 0, 0)
-	debug.keyPressed("leftAndRightPressed: ", tostring(leftAndRightPressed), 0, 24)
+	-- For debugging purposes
+	debug.keyPressed("Facing side: ", direction.current, 0, 0)
+	debug.keyPressed("leftAndRightPressed: ", tostring(leftAndRightPressed), 0, 12)
+	debug.keyPressed("Idle: ", tostring(idle), 0, 24)
 
+	-- Fixes "moonwalk", and allows to face right while idle
+	if love.keyboard.isDown(direction.right) then
+		direction.current = direction.right
+	elseif love.keyboard.isDown(direction.left) then
+		direction.current = direction.left
+	end
+
+	-- Allows to turn(face) left while idle
+	if leftAndRightPressed then
+		if lastKeyPressed == direction.left then
+			direction.current = direction.left
+		end
+	end
+
+	-- Draws the character in the screen, uses the sprites based in the direction.current
 	if direction.current == direction.left then
-		debug.keyPressed("draw() first if: ", direction.current, 0, 12)
 
 		-- Signature of draw function
 		--love.graphics.draw( texture, quad, x, y, r, sx, sy, ox, oy, kx, ky)
@@ -99,8 +120,6 @@ function love.draw()
 				A value more than 1 squezees the image horziontally, and makes it larger vertically (it increases vertically if the value increments, accordingly)
 		]]
 	else
-		debug.keyPressed("draw() second if: ", direction.current, 0, 12)
-		
 		love.graphics.draw(character.player, quads[walk][iteration], character.x, character.y, 0,
 			-1, 1)
 	end
@@ -111,6 +130,7 @@ function love.keypressed(key)
 	if key == direction.left or key == direction.right then
 		direction.current = key
 		idle = false
+		lastKeyPressed = key
 	end
 end
 
@@ -119,20 +139,11 @@ function love.keyreleased(key)
 	if (key == direction.left or key == direction.right) and leftAndRightPressed == true then
 		idle = false -- Make move if one key is released after both were pressed
 		leftAndRightPressed = false
-		-- This fixes the moonwalk
-		if key == direction.left then
-			direction.current = direction.right
-		elseif key == direction.right then
-			direction.current = direction.left
-		end
-	elseif key == direction.left or key == direction.right then
+	-- stop the animation from happening if both keys are released
+	elseif not love.keyboard.isDown(direction.right) and not love.keyboard.isDown(direction.left) then
 		idle = true
 		iteration = 0
 	end
-end
-
-function keyPressed(key)
-	love.graphics.print("Key pressed: " .. key, 0, 0)
 end
 
 -- Used to debug and print which key is currently pressed, make sure to provide substantially different axis in the
